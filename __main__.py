@@ -77,8 +77,8 @@ class Player:
         self.vel_x = 0
         self.vel_y = 0
 
-        self.width = root.winfo_screenwidth()/20
-        self.height = root.winfo_screenheight()/10
+        self.width = root.winfo_screenwidth()/43
+        self.height = root.winfo_screenwidth()/17
 
         self.photo = PhotoImage(file='Astronaut.gif')
 
