@@ -5,6 +5,7 @@ except:
 
 import math
 import time
+import random
 
 root = Tk()
 
@@ -27,8 +28,9 @@ class Game:
         self.mouse_x = 0
         self.mouse_y = 0
 
-        self.enemy = Enemy(300,300)
-
+        self.enemies = []
+        for i in range(20):
+            self.enemies.append(Enemy(random.randint(0,root.winfo_screenwidth()),random.randint(0,root.winfo_screenheight())))
 
 
     def key_press(self,event):
@@ -65,7 +67,8 @@ class Game:
 
         self.player.update()
 
-        self.enemy.update()
+        for i in self.enemies:
+            i.update()
 
         root.update()
 
@@ -111,8 +114,19 @@ class Enemy:
         self.x = x#root.winfo_screenwidth()/2 - 100
         self.y = y#root.winfo_screenheight()/2 - 10
 
-        self.width = root.winfo_screenwidth()/20
-        self.height = root.winfo_screenheight()/10
+        self.width = root.winfo_screenwidth()/43
+        self.height = root.winfo_screenwidth()/60
+
+        self.photo = PhotoImage(file='Alien.gif')
+
+        if 45/self.width > 1:
+            self.photo = self.photo.zoom(int(45/self.width),1)
+        else:
+            self.photo = self.photo.subsample(int(self.width/45),1)
+        if 64/self.width > 1:
+            self.photo = self.photo.zoom(1,int(64/self.width))
+        else:
+            self.photo = self.photo.subsample(1,int(self.width/64))
 
     def update(self):
         dist_x = game.player.x - self.x
@@ -133,7 +147,8 @@ class Enemy:
         self.render()
 
     def render(self):
-        canvas.create_rectangle(self.x+self.width/2,self.y+self.height/2,self.x-self.width/2,self.y-self.height/2,fill='red',outline='red')
+        canvas.create_image(self.x,self.y,anchor=CENTER,image=self.photo)
+        #canvas.create_rectangle(self.x+self.width/2,self.y+self.height/2,self.x-self.width/2,self.y-self.height/2,fill='red',outline='red')
 
 game = Game()
 
