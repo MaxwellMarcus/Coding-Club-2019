@@ -108,8 +108,8 @@ class Player:
 
 class Enemy:
     def __init__(self,x,y):
-        self.x = x
-        self.y = y
+        self.x = x#root.winfo_screenwidth()/2 - 100
+        self.y = y#root.winfo_screenheight()/2 - 10
 
         self.width = root.winfo_screenwidth()/20
         self.height = root.winfo_screenheight()/10
@@ -118,11 +118,14 @@ class Enemy:
         dist_x = game.player.x - self.x
         dist_y = game.player.y - self.y
 
-        x = math.atan2(dist_x,dist_y)
-        x = math.tan(x)*100
+        a = math.atan2((dist_y),(dist_x))
 
-        dist_x = 100
-        dist_y = x
+        x = math.cos(a)
+        y = math.sin(a)
+
+        dist_x = x*100
+        dist_y = y*100
+
 
         self.x += dist_x*game.delta_time
         self.y += dist_y*game.delta_time
