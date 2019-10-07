@@ -90,6 +90,22 @@ class Game:
         for i in self.enemies:
             i.update()
 
+        if (time.time()-self.time)%2 == 0:
+            side = random.randint(1,4)
+            if side == 1:
+                x = random.randint(0,root.winfo_screenwidth())
+                y = 0
+            elif side == 2:
+                x = root.winfo_screenwidth()
+                y = random.randint(0,root.winfo_screenheight())
+            elif side == 3:
+                x = random.randint(0,root.winfo_screenwidth())
+                y = root.winfo_screenheight()
+            else:
+                x = 0
+                y = random.randint(0,root.winfo_screenheight())
+            self.enemies.append(Enemy(x,y,50))
+
         root.update()
 
 class Player:
