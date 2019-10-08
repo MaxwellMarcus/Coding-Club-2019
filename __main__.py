@@ -29,7 +29,9 @@ class Game:
         self.mouse_y = 0
         self.mouse_press = False
 
-        self.wave = Wave(40)
+        self.list = []
+        self.wave = Enemy(300,300,5,self.list,2)
+        self.list.append(self.wave)
 
     def key_press(self,event):
         self.keys.append(event.keysym)
@@ -69,9 +71,9 @@ class Game:
         #canvas.create_text(100,100,text='FPS: '+str(int(1/self.delta_time)),fill='white')
         if self.wave:
             self.wave.update()
-            x = (root.winfo_screenwidth()/4)+(root.winfo_screenwidth()/2*(len(self.wave.enemies)/self.wave.size))
-            self.progress_bar(root.winfo_screenwidth()/4,root.winfo_screenheight()/30*2,x,root.winfo_screenwidth()/4*3,root.winfo_screenheight()/60)
-            canvas.create_text(root.winfo_screenwidth()/2,root.winfo_screenheight()/30,anchor=CENTER,text='Wave',fill='white',font=('TkTextFont',25))
+            #x = (root.winfo_screenwidth()/4)+(root.winfo_screenwidth()/2*(len(self.wave.enemies)/float(self.wave.size)))
+            #self.progress_bar(root.winfo_screenwidth()/4,root.winfo_screenheight()/30*2,x,root.winfo_screenwidth()/4*3,root.winfo_screenheight()/60)
+            #canvas.create_text(root.winfo_screenwidth()/2,root.winfo_screenheight()/30,anchor=CENTER,text='Wave',fill='white',font=('TkTextFont',25))
 
         self.player.update()
 
@@ -146,14 +148,16 @@ class Player:
         canvas.create_line(self.x,self.y,x,y,width=5,fill=fill)
 
 class Enemy:
-    def __init__(self,x,y,speed,wave):
+    def __init__(self,x,y,speed,wave,type):
         self.x = x
         self.y = y
 
+        self.type = type
+
         self.speed = speed
 
-        self.width = root.winfo_screenwidth()/50
-        self.height = root.winfo_screenwidth()/30
+        self.width = root.winfo_screenwidth()/100
+        self.height = root.winfo_screenwidth()/60
 
         self.photo = PhotoImage(file='Alien.gif')
 
@@ -168,6 +172,11 @@ class Enemy:
 
         self.wave = wave
 
+        if self.type == 2:
+            self.laser_available = False
+            self.laser_time = time.time()
+            self.laser = None
+
     def update(self):
         dist_x = game.player.x - self.x
         dist_y = game.player.y - self.y
@@ -176,6 +185,7 @@ class Enemy:
             if game.player.laser:
                 if game.mouse_x > self.x - self.width/2 and game.mouse_x < self.x + self.width/2 and game.mouse_y > self.y - self.height/2 and game.mouse_y < self.y + self.height/2:
                     game.player.laser = False
+                    game.mouse_press = False
                     self.wave.enemies.remove(self)
 
             a = math.atan2((dist_y),(dist_x))
@@ -186,11 +196,26 @@ class Enemy:
             dist_x = x*self.speed
             dist_y = y*self.speed
 
+            if self.type == 1:
+                self.x += dist_x*game.delta_time
+                self.y += dist_y*game.delta_time
 
-            self.x += dist_x*game.delta_time
-            self.y += dist_y*game.delta_time
+            if self.type == 2:
+                if self.laser_available == True:
+                    self.laser = Laser(self.x,self.y,x,y,8,self)
+                    self.laser_available = False
+
+                print(time.time()-self.laser_time)
+
+                if self.laser_available == False and self.laser == None and time.time() - self.laser_time > 5:
+                    self.laser_available = True
+
+                if self.laser:
+                    self.laser.update()
+
         else:
             game.player.dead = True
+
 
         self.render()
 
@@ -198,12 +223,57 @@ class Enemy:
         canvas.create_image(self.x,self.y,anchor=CENTER,image=self.photo)
         #canvas.create_rectangle(self.x+self.width/2,self.y+self.height/2,self.x-self.width/2,self.y-self.height/2,fill='red',outline='red')
 
+class Laser:
+    def __init__(self,x,y,x_move,y_move,speed,enemy):
+        self.x = x
+        self.y = y
+
+        self.last_x = x
+        self.last_y = y
+
+        self.even_laster_x = x
+        self.even_laster_y = y
+
+        self.speed_x = x_move*speed
+        self.speed_y = y_move*speed
+
+        self.enemy = enemy
+
+
+    def update(self):
+        self.even_laster_x = self.last_x
+        self.even_laster_y = self.last_y
+
+        self.last_x = self.x
+        self.last_y = self.y
+
+        self.x += self.speed_x
+        self.y += self.speed_y
+
+        if self.x > game.player.x-game.player.width/2 and self.x < game.player.x+game.player.width/2 and self.y > game.player.y-game.player.height/2 and self.y > game.player.y-game.player.height/2:
+            game.player.dead = True
+            self.enemy.laser = None
+            self.enemy.laser_time = time.time()
+
+        if abs(self.enemy.x - self.x) > root.winfo_screenwidth() or abs(self.enemy.y - self.y) > root.winfo_screenheight():
+            game.player.dead = True
+            self.enemy.laser = None
+            self.enemy.laser_time = time.time()
+
+        self.render()
+
+    def render(self):
+        canvas.create_line(self.x,self.y,self.even_laster_x,self.even_laster_y,fill = 'green',width=4)
+
 class Wave:
-    def __init__(self,size):
+    def __init__(self,size,level):
         self.size = size
+
+        self.level
 
         self.enemies = []
         for i in range(size):
+            type = random.randint(1,self.level)
             side = random.randint(1,4)
             if side == 1:
                 x = random.randint(0,root.winfo_screenwidth())
@@ -217,7 +287,7 @@ class Wave:
             else:
                 x = 0
                 y = random.randint(0,root.winfo_screenheight())
-            self.enemies.append(Enemy(x,y,50,self))
+            self.enemies.append(Enemy(x,y,50,self,type))
 
     def update(self):
         for i in self.enemies:
