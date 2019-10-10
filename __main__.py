@@ -8,6 +8,7 @@ import time
 import random
 
 root = Tk()
+root.config(cursor='none')
 
 canvas = Canvas(root,width=root.winfo_screenwidth(),height=root.winfo_screenheight())
 canvas.configure(background='black')
@@ -76,6 +77,27 @@ class Game:
 
         self.player.update()
 
+        dist_x = self.mouse_x-game.player.x
+        dist_y = self.mouse_y-game.player.y
+
+        if math.sqrt(abs(dist_x)**2+abs(dist_y)**2) > root.winfo_screenwidth()/4:
+            a = math.atan2(dist_y,dist_x)
+
+            x = math.cos(a)
+            y = math.sin(a)
+
+            x_pos = self.player.x
+            y_pos = self.player.y
+            while math.sqrt(abs(self.player.x-x_pos)**2+abs(self.player.y-y_pos)**2) < root.winfo_screenwidth()/4:
+                x_pos += x
+                y_pos += y
+
+        else:
+            x_pos = self.mouse_x
+            y_pos = self.mouse_y
+
+        self.crosshair(x_pos,y_pos)
+
         root.update()
 
     def progress_bar(self,x,y,x2,x3,height):
@@ -89,6 +111,16 @@ class Game:
             canvas.create_oval(x-(height/2-1)-1,y-(height/2-1)-1,x+(height/2-1)-1,y+(height/2-1)-1,fill='red',outline='red')
             canvas.create_oval(x2-(height/2-1)-1,y-(height/2-1)-1,x2+(height/2-1)-1,y+(height/2-1)-1,fill='red',outline='red')
         canvas.create_line(x,y,x2,y,fill='red',width=height)
+
+    def crosshair(self,x,y):
+        canvas.create_line(x-5,y-5,x-20,y-5,fill='white',width=5)
+        canvas.create_line(x-5,y-5,x-5,y-20,fill='white',width=5)
+        canvas.create_line(x-5,y+5,x-20,y+5,fill='white',width=5)
+        canvas.create_line(x-5,y+5,x-5,y+20,fill='white',width=5)
+        canvas.create_line(x+5,y-5,x+20,y-5,fill='white',width=5)
+        canvas.create_line(x+5,y-5,x+5,y-20,fill='white',width=5)
+        canvas.create_line(x+5,y+5,x+20,y+5,fill='white',width=5)
+        canvas.create_line(x+5,y+5,x+5,y+20,fill='white',width=5)
 
 class Player:
     def __init__(self):
@@ -262,7 +294,8 @@ class Player_Laser:
         for i in game.wave.enemies:
             if self.x > i.x-i.width/2 and self.x < i.x+i.width/2 and self.y > i.y-i.height/2 and self.y < i.y+i.height/2:
                 game.wave.enemies.remove(i)
-                game.player.laser = None
+                game.player.lasers.remove(self)
+                break
 
         if abs(game.player.x - self.x) > root.winfo_screenwidth() or abs(game.player.y - self.y) > root.winfo_screenheight():
             game.player.lasers.remove(self)
@@ -285,7 +318,7 @@ class Wave:
                 type = 1
             else:
                 type = 2
-                
+
             side = random.randint(1,4)
             if side == 1:
                 x = random.randint(0,root.winfo_screenwidth())
