@@ -3,6 +3,8 @@ try:
 except:
     from Tkinter import *
 
+from PIL import Image,ImageTk
+
 import math
 import time
 import random
@@ -32,6 +34,7 @@ class Game:
 
         self.wave = Wave(40,2)
 
+        self.bits = []
 
     def key_press(self,event):
         self.keys.append(event.keysym)
@@ -96,7 +99,13 @@ class Game:
             x_pos = self.mouse_x
             y_pos = self.mouse_y
 
-        self.crosshair(x_pos,y_pos)
+        for i in self.bits:
+            i.update()
+
+        if self.player.dead:
+            self.crosshair(x_pos,y_pos)
+
+        canvas.create_text(root.winfo_screenwidth()-root.winfo_screenwidth()/8,root.winfo_screenheight()/15,text='Bits: ' + str(self.player.bits),fill='white',font=('TkTextFont',20))
 
         root.update()
 
@@ -132,12 +141,16 @@ class Player:
 
         self.dead = False
 
+        self.gun_angle = 0
+
         self.width = root.winfo_screenwidth()/43
         self.height = root.winfo_screenwidth()/60
 
         self.photo = PhotoImage(file='Astronaut.gif')
 
         self.lasers = []
+
+        self.bits = 0
 
         if self.width/45 > 1:
             self.photo = self.photo.zoom(int(self.width/45),1)
@@ -154,14 +167,14 @@ class Player:
             self.y += self.vel_y*game.delta_time
 
         if game.mouse_press:
-            if len(self.lasers) < 10:
+            if len(self.lasers) < 10 and not self.dead:
                 x = game.mouse_x-self.x
                 y = game.mouse_y-self.y
 
-                a = math.atan2(y,x)
+                self.gun_angle = math.atan2(y,x)
 
-                x = math.cos(a)
-                y = math.sin(a)
+                x = math.cos(self.gun_angle)
+                y = math.sin(self.gun_angle)
 
                 self.lasers.append(Player_Laser(self.x,self.y,x,y,3))
 
@@ -224,6 +237,9 @@ class Enemy:
                 self.y += dist_y*game.delta_time
 
             if self.type == 2:
+                if get_dist(self.x,self.y,game.player.x,game.player.y) < root.winfo_screenwidth()/2:
+                    self.x += dist_x*game.delta_time
+                    self.y += dist_y*game.delta_time
                 if self.laser_available == True:
                     self.laser = Enemy_Laser(self.x,self.y,x,y,3,self)
                     self.laser_available = False
@@ -242,7 +258,6 @@ class Enemy:
 
     def render(self):
         canvas.create_image(self.x,self.y,anchor=CENTER,image=self.photo)
-        #canvas.create_rectangle(self.x+self.width/2,self.y+self.height/2,self.x-self.width/2,self.y-self.height/2,fill='red',outline='red')
 
 class Enemy_Laser:
     def __init__(self,x,y,x_move,y_move,speed,enemy):
@@ -293,6 +308,7 @@ class Player_Laser:
 
         for i in game.wave.enemies:
             if self.x > i.x-i.width/2 and self.x < i.x+i.width/2 and self.y > i.y-i.height/2 and self.y < i.y+i.height/2:
+                game.bits.append(Bit(i.x,i.y))
                 game.wave.enemies.remove(i)
                 game.player.lasers.remove(self)
                 break
@@ -337,6 +353,23 @@ class Wave:
     def update(self):
         for i in self.enemies:
             i.update()
+
+class Bit:
+    def __init__(self,x,y):
+        self.x = x
+        self.y = y
+
+    def update(self):
+        self.render()
+
+        if get_dist(self.x,self.y,game.player.x,game.player.y) < 60:
+            game.player.bits += 1
+            game.bits.remove(self)
+    def render(self):
+        canvas.create_oval(self.x-10,self.y-10,self.x+10,self.y+10,fill='white')
+
+def get_dist(x1,y1,x2,y2):
+    return math.sqrt((x2-x1)**2+(y2-y1)**2)
 
 game = Game()
 
