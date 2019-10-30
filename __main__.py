@@ -3,8 +3,6 @@ try:
 except:
     from Tkinter import *
 
-from PIL import Image,ImageTk
-
 import math
 import time
 import random
@@ -70,6 +68,10 @@ class Game:
             self.player.vel_x = -150
         if 'd' in self.keys:
             self.player.vel_x = 150
+        if 'r' in self.keys:
+            if self.player.bits and not self.player.ammo == 10:
+                self.player.ammo = 10
+                self.player.bits -= 1
 
         #canvas.create_text(100,100,text='FPS: '+str(int(1/self.delta_time)),fill='white')
         if self.wave:
@@ -102,10 +104,13 @@ class Game:
         for i in self.bits:
             i.update()
 
-        if self.player.dead:
+        if not self.player.dead:
             self.crosshair(x_pos,y_pos)
+        else:
+            root.config(cursor='')
 
         canvas.create_text(root.winfo_screenwidth()-root.winfo_screenwidth()/8,root.winfo_screenheight()/15,text='Bits: ' + str(self.player.bits),fill='white',font=('TkTextFont',20))
+        canvas.create_text(root.winfo_screenwidth()/8,root.winfo_screenheight()/15,text='Ammo: ' + str(self.player.ammo),fill='white',font=('TkTextFont',20))
 
         root.update()
 
@@ -150,6 +155,8 @@ class Player:
 
         self.lasers = []
 
+        self.ammo = 10
+
         self.bits = 0
 
         if self.width/45 > 1:
@@ -167,7 +174,9 @@ class Player:
             self.y += self.vel_y*game.delta_time
 
         if game.mouse_press:
-            if len(self.lasers) < 10 and not self.dead:
+            if self.ammo and not self.dead:
+                self.ammo -= 1
+
                 x = game.mouse_x-self.x
                 y = game.mouse_y-self.y
 
@@ -308,7 +317,8 @@ class Player_Laser:
 
         for i in game.wave.enemies:
             if self.x > i.x-i.width/2 and self.x < i.x+i.width/2 and self.y > i.y-i.height/2 and self.y < i.y+i.height/2:
-                game.bits.append(Bit(i.x,i.y))
+                if random.randint(0,1) == 0:
+                    game.bits.append(Bit(i.x,i.y))
                 game.wave.enemies.remove(i)
                 game.player.lasers.remove(self)
                 break
@@ -358,6 +368,9 @@ class Bit:
     def __init__(self,x,y):
         self.x = x
         self.y = y
+        self.time = time.time()+5
+        self.image = PhotoImage(file='Bits.gif')
+        self.image = self.image.zoom(2,2)
 
     def update(self):
         self.render()
@@ -365,8 +378,11 @@ class Bit:
         if get_dist(self.x,self.y,game.player.x,game.player.y) < 60:
             game.player.bits += 1
             game.bits.remove(self)
+
+        if time.time() >= self.time:
+            game.bits.remove(self)
     def render(self):
-        canvas.create_oval(self.x-10,self.y-10,self.x+10,self.y+10,fill='white')
+        canvas.create_image(self.x,self.y,image=self.image,anchor=CENTER)
 
 def get_dist(x1,y1,x2,y2):
     return math.sqrt((x2-x1)**2+(y2-y1)**2)
